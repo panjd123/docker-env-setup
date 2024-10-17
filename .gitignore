@@ -1,1 +1,3 @@
-ssh-setup/*_key/
+ssh_setup/*_key/
+__pycache__
+.pytest_cache

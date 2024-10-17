@@ -83,9 +83,9 @@ RUN touch ~/.ssh/known_hosts \
     && ssh-keyscan -H hf.co >> ~/.ssh/known_hosts
 
 # setup ssh
-# COPY ssh-setup /tmp/ssh-setup
-# RUN python3 /tmp/ssh-setup/ssh-setup.py \
-#     && rm -rf /tmp/ssh-setup
+# COPY ssh_setup /tmp/ssh_setup
+# RUN python3 /tmp/ssh_setup/ssh_setup.py \
+#     && rm -rf /tmp/ssh_setup
 
 RUN mkdir -p /data/models /data/datasets
 

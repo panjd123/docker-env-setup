@@ -1,6 +1,17 @@
+#!/usr/bin/python3
+
 import argparse
 import os
 import subprocess
+
+def auto_rename(file, dir):
+    base, ext = os.path.splitext(file)
+    if os.path.exists(os.path.join(dir, file)):
+        i = 1
+        while os.path.exists(os.path.join(dir, f'{base}_{i}{ext}')):
+            i += 1
+        return f'{base}_{i}{ext}'
+    return file
 
 def setup(container_key_path, client_key_path):
     if not os.path.exists(os.path.expanduser('~/.ssh')):
@@ -17,16 +28,18 @@ def setup(container_key_path, client_key_path):
     for root, dirs, files in os.walk(container_key_path):
         for file in files:
             if file.endswith(".pub"):
-                with open(os.path.expanduser('~/.ssh/authorized_keys'), 'w') as f:
+                with open(os.path.expanduser('~/.ssh/authorized_keys'), 'a') as f:
                     with open(os.path.join(root, file), 'r') as key:
                         f.write(key.read())
-                subprocess.run(['cp', os.path.join(root, file), os.path.expanduser('~/.ssh/')])
-                subprocess.run(['chmod', '644', os.path.expanduser(f'~/.ssh/{file}')])
+                target_file = auto_rename(file, os.path.expanduser('~/.ssh'))
+                subprocess.run(['cp', os.path.join(root, file), os.path.expanduser(f'~/.ssh/{target_file}')])
+                subprocess.run(['chmod', '644', os.path.expanduser(f'~/.ssh/{target_file}')])
                 container_add_count += 1
             else:
-                subprocess.run(['cp', os.path.join(root, file), os.path.expanduser('~/.ssh/')])
-                subprocess.run(['chmod', '600', os.path.expanduser(f'~/.ssh/{file}')])
-                
+                target_file = auto_rename(file, os.path.expanduser('~/.ssh'))
+                subprocess.run(['cp', os.path.join(root, file), os.path.expanduser(f'~/.ssh/{target_file}')])
+                subprocess.run(['chmod', '600', os.path.expanduser(f'~/.ssh/{target_file}')])
+
     assert container_add_count > 0, 'Error: no container key found'
 
     client_add_count = 0
@@ -34,7 +47,7 @@ def setup(container_key_path, client_key_path):
     for root, dirs, files in os.walk(client_key_path):
         for file in files:
             if file.endswith(".pub"):
-                with open(os.path.expanduser('~/.ssh/authorized_keys'), 'w') as f:
+                with open(os.path.expanduser('~/.ssh/authorized_keys'), 'a') as f:
                     with open(os.path.join(root, file), 'r') as key:
                         f.write(key.read())
                 client_add_count += 1
@@ -44,6 +57,20 @@ def setup(container_key_path, client_key_path):
     print(f'Added {container_add_count} container keys and {client_add_count} client keys')
     
     assert client_add_count > 0, 'Error: no client key found'
+    
+    # clean up
+    clean_count = 0
+    with open(os.path.expanduser('~/.ssh/authorized_keys'), 'r') as f:
+        authorized_keys = f.readlines()
+        clean_count = len(authorized_keys)
+        authorized_keys = list(set(authorized_keys))
+        clean_count -= len(authorized_keys)
+    
+    with open(os.path.expanduser('~/.ssh/authorized_keys'), 'w') as f:
+        f.writelines(authorized_keys)
+    
+    print(f'Cleaned {clean_count} duplicate keys in authorized_keys')
+        
 
 def init(container_key_path, client_key_path):
     subprocess.run(['mkdir', '-p', client_key_path])
@@ -54,13 +81,14 @@ def init(container_key_path, client_key_path):
     for root, dirs, files in os.walk(os.path.expanduser('~/.ssh')):
         for file in files:
             if file.endswith(".pub"):
-                subprocess.run(['cp', os.path.join(root, file), client_key_path])
-                subprocess.run(['chmod', '644', os.path.join(client_key_path, file)])
+                target_file = auto_rename(file, client_key_path)
+                subprocess.run(['cp', os.path.join(root, file), os.path.join(client_key_path, target_file)])
+                subprocess.run(['chmod', '644', os.path.join(client_key_path, target_file)])
                 client_key_init_count += 1
 
     print(f'Initialized {client_key_init_count} client keys')
     
-    if not os.path.exists(container_key_path):
+    if not os.path.exists(container_key_path) or len(os.listdir(container_key_path)) == 0:
         print(f'Info: container key path {container_key_path} does not exist, generating new keys')
         subprocess.run(['mkdir', '-p', container_key_path])
         subprocess.run(['ssh-keygen', '-t', 'rsa', '-b', '4096', '-f', os.path.join(container_key_path, 'id_rsa'), '-N', ''])
@@ -83,9 +111,9 @@ def main():
     
     if args.install:
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        subprocess.run(['docker', 'cp', dir_path, f'{args.install}:/tmp/ssh-setup'])
-        subprocess.run(['docker', 'exec', args.install, 'python', '/tmp/ssh-setup/ssh-setup.py'])
-        subprocess.run(['docker', 'exec', args.install, 'rm', '-rf', '/tmp/ssh-setup'])
+        subprocess.run(['docker', 'cp', dir_path, f'{args.install}:/tmp/ssh_setup'])
+        subprocess.run(['docker', 'exec', args.install, 'python3', '/tmp/ssh_setup/ssh_setup.py'])
+        subprocess.run(['docker', 'exec', args.install, 'rm', '-rf', '/tmp/ssh_setup'])
     else:
         setup(container_key_path, client_key_path)
 
