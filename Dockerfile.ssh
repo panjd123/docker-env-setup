@@ -1,0 +1,29 @@
+FROM thebloke/cuda11.8.0-ubuntu22.04-pytorch
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssh-server \
+    openssh-client \
+    wget \
+    libglib2.0-0 \
+    tzdata
+
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone
+
+RUN pip install transformers==4.30.2
+RUN python3 -m pip install torch==2.1.0+cu118 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+RUN pip install nvtx
+
+RUN wget https://developer.nvidia.com/downloads/assets/tools/secure/nsight-systems/2024_6/NsightSystems-linux-cli-public-2024.6.1.90-3490548.deb
+RUN dpkg -i NsightSystems-linux-cli-public-2024.6.1.90-3490548.deb
+
+# setup ssh
+COPY ssh-setup /tmp/ssh-setup
+RUN python3 /tmp/ssh-setup/ssh-setup.py \
+    && rm -rf /tmp/ssh-setup
+
+CMD ["/bin/bash", "-c", "service ssh start && /bin/bash"]
