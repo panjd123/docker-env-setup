@@ -55,7 +55,7 @@ def setup(container_key_path, client_key_path):
                 print(f'Warning: client key should be a public key, ignoring {file}')
 
     print(f'Added {container_add_count} container keys and {client_add_count} client keys')
-    
+
     assert client_add_count > 0, 'Error: no client key found'
     
     # clean up
@@ -85,6 +85,16 @@ def init(container_key_path, client_key_path):
                 subprocess.run(['cp', os.path.join(root, file), os.path.join(client_key_path, target_file)])
                 subprocess.run(['chmod', '644', os.path.join(client_key_path, target_file)])
                 client_key_init_count += 1
+    
+    if os.path.exists(os.path.expanduser('~/.ssh/authorized_keys')):
+        with open(os.path.expanduser('~/.ssh/authorized_keys'), 'r') as f:
+            authorized_keys = f.readlines()
+            for index, key in enumerate(authorized_keys):
+                if key.strip() == '':
+                    continue
+                with open(os.path.join(client_key_path, f'authorized_keys_{index}.pub'), 'w') as f:
+                    f.write(key)
+                client_key_init_count += 1
 
     print(f'Initialized {client_key_init_count} client keys')
     
@@ -93,11 +103,16 @@ def init(container_key_path, client_key_path):
         subprocess.run(['mkdir', '-p', container_key_path])
         subprocess.run(['ssh-keygen', '-t', 'rsa', '-b', '4096', '-f', os.path.join(container_key_path, 'id_rsa'), '-N', ''])
 
+def clean(client_key_path):
+    if os.path.exists(client_key_path):
+        subprocess.run(['rm', '-rf', os.path.join(client_key_path, "*")])
+
 def main():
     parser = argparse.ArgumentParser(description='Setup SSH environment')
     parser.add_argument('--container_key', type=str, default='container_key', help='Container key')
     parser.add_argument('--client_key', type=str, default='client_key', help='Client key')
     parser.add_argument('--init', action='store_true', help='Copy keys in current machine to ./client_key')
+    parser.add_argument('--clean', action='store_true', help='Clean ./client_key')
     parser.add_argument('--install',type=str, default='', help='Docker container to install ssh keys')
 
     args = parser.parse_args()
@@ -108,14 +123,20 @@ def main():
 
     if args.init:
         init(container_key_path, client_key_path)
+        return
+
+    if args.clean:
+        clean(client_key_path)
+        return
     
     if args.install:
         dir_path = os.path.dirname(os.path.realpath(__file__))
         subprocess.run(['docker', 'cp', dir_path, f'{args.install}:/tmp/ssh_setup'])
         subprocess.run(['docker', 'exec', args.install, 'python3', '/tmp/ssh_setup/ssh_setup.py'])
         subprocess.run(['docker', 'exec', args.install, 'rm', '-rf', '/tmp/ssh_setup'])
-    else:
-        setup(container_key_path, client_key_path)
+        return 
+    
+    setup(container_key_path, client_key_path)
 
 if __name__ == '__main__':
     main()
