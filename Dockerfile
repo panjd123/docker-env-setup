@@ -69,26 +69,11 @@ RUN conda install numpy scipy matplotlib pandas seaborn scikit-learn sympy ipyth
 # clean
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* && conda clean -ay
 
-# avoid ssh key checking
-RUN mkdir -p ~/.ssh \
-    && touch ~/.ssh/known_hosts \
-    && chmod 644 ~/.ssh/known_hosts \
-    && ssh-keyscan -H github.com >> ~/.ssh/known_hosts \
-    && ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts \
-    && ssh-keyscan -H gitee.com >> ~/.ssh/known_hosts \
-    && ssh-keyscan -H hf.co >> ~/.ssh/known_hosts
-
 # setup ssh
-COPY ssh_setup /tmp/ssh_setup
-RUN python3 /tmp/ssh_setup/ssh_setup.py \
-    && rm -rf /tmp/ssh_setup
+# COPY ssh_setup /tmp/ssh_setup
+# RUN python3 /tmp/ssh_setup/ssh_setup.py \
+#     && rm -rf /tmp/ssh_setup
 
 RUN mkdir -p /data/models /data/datasets
-
-# clone common models
-RUN git clone git@hf.co:meta-llama/Llama-3.2-1B /data/models/Llama-3.2-1B \
-    & git clone git@hf.co:meta-llama/Llama-3.2-1B-Instruct /data/models/Llama-3.2-1B-Instruct \
-    & git clone git@hf.co:google-bert/bert-base-uncased \
-    & wait
 
 CMD ["/bin/bash", "-c", "service ssh start && /bin/bash"]

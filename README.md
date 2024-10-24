@@ -1,10 +1,14 @@
 # General Container for Develop
 
 ```bash
-docker build -t base .
+docker build -t panjd123/pytorch-dev .
 ```
 
 It will cost 10+ mins to build.
+
+```bash
+docker pull panjd123/pytorch-dev
+````
 
 ```bash
 docker run -it --name jarden \
@@ -13,9 +17,12 @@ docker run -it --name jarden \
     --restart always \
     --privileged \
     -d \
-    base
+    pytorch-dev
 ```
 
 ```bash
-ssh root@127.0.0.1 -p 25468
+python3 ./ssh_setup/ssh_setup --init
+python3 ./ssh_setup/ssh_setup --install jarden
+
+ssh root@127.0.0.1 -p 25486
 ```
