@@ -44,7 +44,9 @@ ARG GIT_EMAIL=anonymous@gmail.com
 RUN git lfs install \
     && git config --global user.email $GIT_EMAIL \
     && git config --global user.name $GIT_USER \
-    && git config --global init.defaultBranch main
+    && git config --global init.defaultBranch main \
+    && git config --global core.editor "nano" \
+    && git config --global pull.rebase false
 
 # install miniconda
 RUN curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-x86_64.sh \
