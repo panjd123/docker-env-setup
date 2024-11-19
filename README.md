@@ -21,8 +21,8 @@ docker run -it --name jarden \
 ```
 
 ```bash
-python3 ./ssh_setup/ssh_setup --init
-python3 ./ssh_setup/ssh_setup --install jarden
+python3 ./ssh_setup/ssh_setup.py --init
+python3 ./ssh_setup/ssh_setup.py --install jarden
 
 ssh root@127.0.0.1 -p 25486
 ```
