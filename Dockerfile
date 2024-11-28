@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+FROM nvidia/cuda:12.6.2-cudnn-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
@@ -32,13 +32,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git-lfs \
     libopenblas-dev \
     liblapack-dev \
-    libboost-all-dev
+    libboost-all-dev \
+    lsof \
+    rsync
+
+# setup rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone
 
-ARG GIT_USER=anonymous
-ARG GIT_EMAIL=anonymous@gmail.com
+ARG GIT_USER=panjd123
+ARG GIT_EMAIL=1747366367@qq.com
 
 # git settings
 RUN git lfs install \
@@ -62,7 +67,7 @@ RUN echo 'export PATH="$PATH:~/miniconda3/bin"' >> ~/.bashrc \
 
 SHELL ["/root/miniconda3/bin/conda", "run", "-n", "base", "/bin/bash", "-c"]
 
-RUN conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 RUN conda install numpy scipy matplotlib pandas seaborn scikit-learn sympy ipython jupyter transformers -y
 
