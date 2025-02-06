@@ -17,7 +17,7 @@ docker run -it --name jarden \
     --restart always \
     --privileged \
     -d \
-    pytorch-dev
+    panjd123/pytorch-dev
 ```
 
 ```bash
